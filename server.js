@@ -8,13 +8,26 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// Memastikan fail statik diambil dari folder 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
-wss.on('connection', (ws) => {
-    console.log("Pengguna baru disambungkan");
+// KATA LALUAN ANDA (Boleh tukar di sini)
+const MY_PASSWORD = "aizul123"; 
 
-    // Menjalankan Bash sebenar di server (Docker/Linux)
+wss.on('connection', (ws) => {
+    let authenticated = false;
+
+    // 1. PAPARKAN BANNER (Baris 19)
+    ws.send("\r\n \x1b[34m" +
+        "  ██╗  ██╗ █████╗ ██╗     ██╗    ██╗███████╗██████╗ \r\n" +
+        "  ██║ ██╔╝██╔══██╗██║     ██║    ██║██╔════╝██╔══██╗\r\n" +
+        "  █████╔╝ ███████║██║     ██║ █╗ ██║█████╗  ██████╔╝\r\n" +
+        "  ██╔═██╗ ██╔══██╗██║     ██║███╗██║██╔══╝  ██╔══██╗\r\n" +
+        "  ██║  ██╗██║  ██║███████╗╚███╔███╔╝███████╗██████╔╝\r\n" +
+        "  ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝ ╚══════╝╚═════╝ \x1b[0m\r\n" +
+        "  \x1b[32m[SECURITY SYSTEM ACTIVE]\x1b[0m\r\n");
+
+    ws.send("\r\nSila masukkan kata laluan untuk akses Bash: ");
+
     const shell = pty.spawn('bash', [], {
         name: 'xterm-color',
         cols: 80,
@@ -23,27 +36,32 @@ wss.on('connection', (ws) => {
         env: process.env
     });
 
-    // Hantar data dari Bash ke Browser (Frontend)
     shell.on('data', (data) => {
-        ws.send(data);
+        if (authenticated) ws.send(data);
     });
 
-    // Terima input dari Browser dan tulis ke Bash
     ws.on('message', (msg) => {
-        shell.write(msg);
+        if (!authenticated) {
+            // Proses semakan kata laluan
+            const input = msg.toString().trim();
+            if (input === MY_PASSWORD) {
+                authenticated = true;
+                ws.send("\r\n\x1b[32mAKSES DIBERIKAN. Memulakan Bash...\x1b[0m\r\n\r\n");
+                shell.write("\n"); // Mulakan prompt bash
+            } else {
+                ws.send("\r\n\x1b[31mKATA LALUAN SALAH!\x1b[0m\r\nSila cuba lagi: ");
+            }
+        } else {
+            shell.write(msg);
+        }
     });
 
     ws.on('close', () => {
-        console.log("Sesi tamat");
         shell.kill();
     });
 });
 
-// BAHAGIAN PENTING: Menggunakan port dinamik Render atau 3000 untuk local
 const PORT = process.env.PORT || 3000;
-
-// Mendengar pada 0.0.0.0 supaya boleh diakses melalui internet/telefon
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Terminal Aktif pada Port ${PORT}`);
-    console.log(`Buka di browser: http://localhost:${PORT}`);
+    console.log(`🚀 Server berjalan pada port ${PORT}`);
 });
