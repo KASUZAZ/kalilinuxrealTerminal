@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <title>Kali Linux Real Terminal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.1.0/css/xterm.css" />
+    <style>
+        body { margin: 0; background-color: #000; overflow: hidden; }
+        #terminal { height: 100vh; width: 100vw; }
+    </style>
+</head>
+<body>
+
+<div id="terminal"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.1.0/lib/xterm.js"></script>
+
+<script>
+    // 1. Inisialisasi Terminal
+    const term = new Terminal({
+        cursorBlink: true,
+        fontFamily: 'Courier New, monospace',
+        fontSize: 14,
+        theme: {
+            background: '#0f0f0f',
+            foreground: '#ffffff'
+        }
+    });
+
+    term.open(document.getElementById('terminal'));
+    term.writeln('Menghubungi server Kali Linux...');
+
+    // 2. Sambungkan ke WebSocket (Backend server.js)
+    const socket = new WebSocket('ws://localhost:3000');
+
+    // Apabila bersambung, hantar data ke terminal
+    socket.onmessage = (event) => {
+        term.write(event.data);
+    };
+
+    // Apabila pengguna menaip, hantar ke server
+    term.onData(data => {
+        socket.send(data);
+    });
+
+    socket.onclose = () => {
+        term.writeln('\n[Sesi Terputus]');
+    };
+</script>
+</body>
+</html>
