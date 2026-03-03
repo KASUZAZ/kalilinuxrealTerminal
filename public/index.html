@@ -31,8 +31,13 @@
     term.writeln('Menghubungi server Kali Linux...');
 
     // 2. Sambungkan ke WebSocket (Backend server.js)
-    const socket = new WebSocket('ws://localhost:3000');
+const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+const socketUrl = protocol + window.location.host;
+const socket = new WebSocket(socketUrl);
 
+socket.onopen = () => {
+    term.writeln('Berjaya disambungkan ke server Kali Linux!');
+};
     // Apabila bersambung, hantar data ke terminal
     socket.onmessage = (event) => {
         term.write(event.data);
