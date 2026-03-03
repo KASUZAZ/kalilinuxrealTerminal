@@ -8,26 +8,13 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+// Folder untuk fail HTML/JS
 app.use(express.static(path.join(__dirname, 'public')));
 
-// KATA LALUAN ANDA (Boleh tukar di sini)
-const MY_PASSWORD = "aizul123"; 
-
 wss.on('connection', (ws) => {
-    let authenticated = false;
+    console.log("Sesi Terminal Bermula...");
 
-    // 1. PAPARKAN BANNER (Baris 19)
-    ws.send("\r\n \x1b[34m" +
-        "  ██╗  ██╗ █████╗ ██╗     ██╗    ██╗███████╗██████╗ \r\n" +
-        "  ██║ ██╔╝██╔══██╗██║     ██║    ██║██╔════╝██╔══██╗\r\n" +
-        "  █████╔╝ ███████║██║     ██║ █╗ ██║█████╗  ██████╔╝\r\n" +
-        "  ██╔═██╗ ██╔══██╗██║     ██║███╗██║██╔══╝  ██╔══██╗\r\n" +
-        "  ██║  ██╗██║  ██║███████╗╚███╔███╔╝███████╗██████╔╝\r\n" +
-        "  ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝ ╚══════╝╚═════╝ \x1b[0m\r\n" +
-        "  \x1b[32m[SECURITY SYSTEM ACTIVE]\x1b[0m\r\n");
-
-    ws.send("\r\nSila masukkan kata laluan untuk akses Bash: ");
-
+    // Spawn shell bash tempatan
     const shell = pty.spawn('bash', [], {
         name: 'xterm-color',
         cols: 80,
@@ -37,31 +24,22 @@ wss.on('connection', (ws) => {
     });
 
     shell.on('data', (data) => {
-        if (authenticated) ws.send(data);
+        ws.send(data);
     });
 
     ws.on('message', (msg) => {
-        if (!authenticated) {
-            // Proses semakan kata laluan
-            const input = msg.toString().trim();
-            if (input === MY_PASSWORD) {
-                authenticated = true;
-                ws.send("\r\n\x1b[32mAKSES DIBERIKAN. Memulakan Bash...\x1b[0m\r\n\r\n");
-                shell.write("\n"); // Mulakan prompt bash
-            } else {
-                ws.send("\r\n\x1b[31mKATA LALUAN SALAH!\x1b[0m\r\nSila cuba lagi: ");
-            }
-        } else {
-            shell.write(msg);
-        }
+        shell.write(msg);
     });
 
     ws.on('close', () => {
+        console.log("Sesi Tamat.");
         shell.kill();
     });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server berjalan pada port ${PORT}`);
+// Port tetap untuk laptop anda
+const PORT = 3000;
+server.listen(PORT, () => {
+    console.log(`🚀 Terminal Local Aktif!`);
+    console.log(`Buka di browser: http://localhost:${PORT}`);
 });
