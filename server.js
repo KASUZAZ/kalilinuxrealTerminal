@@ -8,13 +8,13 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// Folder untuk fail HTML/JS
+// Menghoskan fail statik dari folder 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
 wss.on('connection', (ws) => {
-    console.log("Sesi Terminal Bermula...");
+    console.log("Sesi Terminal Baru Bermula...");
 
-    // Spawn shell bash tempatan
+    // Spawn shell bash untuk berinteraksi dengan sistem Kali Linux
     const shell = pty.spawn('bash', [], {
         name: 'xterm-color',
         cols: 80,
@@ -23,10 +23,12 @@ wss.on('connection', (ws) => {
         env: process.env
     });
 
+    // Menghantar output bash ke browser melalui WebSocket
     shell.on('data', (data) => {
         ws.send(data);
     });
 
+    // Menerima input dari browser dan hantar ke bash
     ws.on('message', (msg) => {
         shell.write(msg);
     });
@@ -37,9 +39,12 @@ wss.on('connection', (ws) => {
     });
 });
 
-// Port tetap untuk laptop anda
+// Konfigurasi Port dan Host
 const PORT = 3000;
-server.listen(PORT, () => {
-    console.log(`🚀 Terminal Local Aktif!`);
-    console.log(`Buka di browser: http://localhost:${PORT}`);
+const HOST = '0.0.0.0'; // Membenarkan akses dari luar laptop (Network Access)
+
+server.listen(PORT, HOST, () => {
+    console.log(`🚀 Terminal Aktif!`);
+    console.log(`Akses Local  : http://localhost:${PORT}`);
+    console.log(`Akses Network: http://172.20.22.104:${PORT}`);
 });
